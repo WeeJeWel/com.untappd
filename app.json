@@ -12,11 +12,12 @@
     "en": "Untappd"
   },
   "description": {
-    "en": "Discover and share your favorite beer with Untappd"
+    "en": "Discover and share your favorite beer with Untappd."
   },
   "category": [
     "internet"
   ],
+  "support": "mailto:emile@emile.nl",
   "permissions": [],
   "images": {
     "small": "/assets/images/small.png",
