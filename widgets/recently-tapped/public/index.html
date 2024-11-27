@@ -1,0 +1,197 @@
+<html>
+
+<head>
+  <style>
+    body {
+      overflow: hidden;
+    }
+
+    #beers {
+      white-space: nowrap;
+      font-size: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 16px;
+    }
+
+    .beer {
+      display: inline-block;
+      margin-right: 16px;
+      width: 112.5px;
+
+      transform: scale(1);
+      transition: transform 0.2s;
+    }
+
+    .beer:hover {
+      cursor: pointer;
+    }
+
+    .beer:active {
+      transform: scale(0.95);
+    }
+
+    .beer:last-child {
+      margin-right: 0;
+    }
+
+    .beer-can {
+      display: block;
+      position: relative;
+      width: 112.5px;
+      height: 137.5px;
+      overflow: hidden;
+      background: url(./can.png) no-repeat center center;
+      background-size: contain;
+    }
+
+    .beer-can-label {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+
+      background-repeat: no-repeat;
+      background-size: auto 100%;
+      background-position: center center;
+      mix-blend-mode: multiply;
+
+      mask-image: url(./can-mask.png);
+      mask-size: contain;
+      mask-repeat: no-repeat;
+      mask-position: center center;
+    }
+
+    .beer-can-label.is-hd {
+      background-size: auto 75%;
+    }
+
+    .beer-name {
+      font-size: 14px;
+      color: var(--homey-color-mono-700);
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+
+    .brewery-name {
+      display: none;
+
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #error {
+      position: absolute;
+      z-index: 1000;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+
+      padding: 0 50px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--homey-color-mono-000);
+      text-align: center;
+
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 24px;
+      color: var(--homey-color-mono-700)
+    }
+
+    #error:empty {
+      display: none;
+    }
+  </style>
+</head>
+
+<body class="homey-widget-full">
+
+  <div id="error"></div>
+  <div id="beers"></div>
+
+  <script type="text/javascript">
+    function onHomeyReady(Homey) {
+      function update() {
+        Promise.resolve().then(async () => {
+          const { username } = Homey.getSettings();
+          if (!username) {
+            throw new Error('Please enter an Untappd username in the widget\'s settings.');
+          }
+
+          const { beers } = await Homey.api('GET', `/user-beers?username=${username}`);
+          for (const beer of Object.values(beers.items)) {
+            const $beer = document.createElement('div');
+            $beer.classList.add('beer');
+            $beer.addEventListener('click', () => {
+              Homey.popup(`https://untappd.com/user/${username}/checkin/${beer.recent_checkin_id}`);
+              Homey.hapticFeedback();
+            });
+            document.getElementById('beers').appendChild($beer);
+
+            const $beerCan = document.createElement('div');
+            $beerCan.classList.add('beer-can');
+            $beer.appendChild($beerCan);
+
+            const $beerCanLabel = document.createElement('div');
+            $beerCanLabel.classList.add('beer-can-label');
+            $beerCanLabel.style.backgroundImage = `url(${beer.beer.beer_label})`;
+            console.log('sm', beer.beer.beer_label);
+            $beerCan.appendChild($beerCanLabel);
+
+            const $beerName = document.createElement('div');
+            $beerName.classList.add('beer-name');
+            $beerName.innerText = beer.beer.beer_name;
+            $beer.appendChild($beerName);
+
+            const $breweryName = document.createElement('div');
+            $breweryName.classList.add('brewery-name');
+            $breweryName.innerText = beer.brewery.brewery_name;
+            $beer.appendChild($breweryName);
+
+            // Get full-res image
+            Homey.api('GET', `/beer?beerId=${beer.beer.bid}`)
+              .then(beer => {
+                const beerLabelHd = beer.beer.beer_label_hd;
+                if (beerLabelHd) {
+                  // Preload image, then set as background
+                  const image = new Image();
+                  image.onload = () => {
+                    $beerCanLabel.style.backgroundImage = `url(${image.src})`;
+                    $beerCanLabel.classList.add('is-hd');
+                  }
+                  image.src = beerLabelHd;
+                }
+              })
+              .catch(() => { });
+          }
+
+          document.getElementById('error').innerText = '';
+        })
+          .catch(err => {
+            console.error(err);
+            document.getElementById('error').innerText = err.message;
+          })
+          .finally(() => {
+            Homey.ready();
+          });
+      }
+
+      document.getElementById('error').innerText = 'Loading...';
+      update();
+      setInterval(update, 1000 * 60 * 60); // Update every hour
+    }
+  </script>
+</body>
+
+</html>

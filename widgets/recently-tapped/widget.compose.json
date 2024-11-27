@@ -1,0 +1,28 @@
+{
+  "name": {
+    "en": "Recently Tapped"
+  },
+  "height": 186,
+  "settings": [
+    {
+      "id": "username",
+      "type": "text",
+      "label": {
+        "en": "Username"
+      },
+      "hint": {
+        "en": "This is the Untappd username of the user you'd like to see their recent taps."
+      }
+    }
+  ],
+  "api": {
+    "getUserBeers": {
+      "method": "GET",
+      "path": "/user-beers"
+    },
+    "getBeer": {
+      "method": "GET",
+      "path": "/beer"
+    }
+  }
+}

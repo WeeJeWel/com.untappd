@@ -1,0 +1,7 @@
+{
+  "extends": "athom/homey-app",
+  "rules": {
+    "strict": "off",
+    "eslint-plugin-import/extensions": "off",
+  }
+}
